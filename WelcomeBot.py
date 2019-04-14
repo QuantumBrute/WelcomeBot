@@ -53,7 +53,7 @@ def unflaired():
         for a in range(len(itemname)):
             print(str(itemname[a]) + " will be flaired: Mortal ("  + str(mnew1) + "th)")
             newflair = ("Mortal (" + str(mnew1) + "th)")
-            subreddit.flair.set(str(itemname[a],newflair))
+            subreddit.flair.set(str(itemname[a]),newflair))
             itemfinal = { "Name" : str(itemname[a]), "Number" : mnew1}
             data.append(itemfinal)
             mnew1 = mnew1 + 1
