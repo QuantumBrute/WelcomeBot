@@ -1,112 +1,166 @@
+import inflect
 import praw
+import prawcore
+import prawcore.exceptions
 import LoginInfo
 import json
 import time
-#Created by u/QuantumBrute
-    
-data = []
-itemname = []
+import configparser
 
-print ("Starting Bot...")
-print ("Logging in...")
+import logging
+import logging.config
+from layer7_utilities import LoggerConfig
 
-#To login into reddit
-reddit = praw.Reddit(client_id= LoginInfo.client_id,
-		     client_secret= LoginInfo.client_secret,
-		     username= LoginInfo.username,
-		     password= LoginInfo.password,
-		     user_agent= LoginInfo.user_agent)
+botconfig = configparser.ConfigParser()
+botconfig.read("botconfig.ini")
 
-print ("Logged in!")
+__botname__ = "Eulogy612-WelcomeBot"
+__description__ = "Sets user flair in r/TheApexCollective. Made by /u/QuantumBrute"
+__author__ = "/u/QuantumBrute"
+__version__ = "1.0.0"
+__dsn__ = botconfig.get("BotConfig", "DSN")
 
-subreddit = reddit.subreddit("TheApexCollective") # Defines which subreddit the bot should work on
+# Created by u/QuantumBrute
 
-print("Looking for new and unflaired users...")
 
-def unflaired():
-    with open('LastApprovedUser.txt', 'r') as infile:
-        info = json.load(infile,)
-    n = len(info) + 1
-    m = info[n-2].get("Number")
-    mnew1 = m + 1
-    #mnew2 = 0
-    #mnew3 = 0
-    print("Current number of existing users: " + str(m))
-    flag = 0
-    #check = 0
-    checknew = 0
-    for contributor1 in subreddit.contributor():
-        for flair in subreddit.flair(redditor=contributor1):
-            if flair.get("flair_text") == None:
-                print("Unflaired user found!")
-                itemname.append(contributor1)
-                checknew = 1
-            else:
-                flag = 1
-                break
-        if flag == 1:
-            break
-    itemname.reverse()
-    if checknew == 1:
-        for a in range(len(itemname)):
-            print(str(itemname[a]) + " will be flaired: Mortal ("  + str(mnew1) + "th)")
-            newflair = ("Mortal (" + str(mnew1) + "th)")
-            subreddit.flair.set(str(itemname[a]),newflair)
-            itemfinal = { "Name" : str(itemname[a]), "Number" : mnew1}
-            data.append(itemfinal)
-            mnew1 = mnew1 + 1
-        with open('LastApprovedUser.txt', 'w') as outfile:
-            json.dump(data, outfile, indent=2)
-        print("User appended successfully!")
-        print("New number of existing users: " + str(mnew1 - 1))
-             
-    elif flag == 1:
-        print("No new users found!")
+class Bot(object):
+    def __init__(self):
+        self.reddit = None
+        self.canRun = False
+        self.data = []
+        self.itemname = []
 
-    '''if n==1:
-        for contributor2 in subreddit.contributor():
-            itemname.append(str(contributor2))
-        itemname.reverse()
-        for x in range(len(itemname)):
-            mnew2 = m + 1
-            itemfinal = { "Name" : itemname[x], "Number" : mnew2}
-            data.append(itemfinal)
-            with open('LastApprovedUser.txt', 'w') as outfile:
+        # Create the logger
+        loggerconfig = LoggerConfig(__dsn__, __botname__, __version__)
+        logging.config.dictConfig(loggerconfig.get_config())
+        self.log = logging.getLogger("root")
+        self.log.info("/*********Starting App*********\\")
+        self.log.info("App Name: {} | Version: {}".format(__botname__, __version__))
+
+        self.__init_configs()
+        self.login()
+        if self.canRun:
+            self.subreddit = self.reddit.subreddit("TheApexCollective")
+
+    def __init_configs(self):
+        config = configparser.ConfigParser()
+        config.read("/opt/skynet/Configs/config.ini")
+        self.DatabaseName = "TheTraveler"
+        self.DB_USERNAME = config.get("Database", "Username")
+        self.DB_PASSWORD = config.get("Database", "Password")
+        self.DB_HOST = config.get("Database", "Host")
+
+    def login(self):
+        try:
+            self.reddit = praw.Reddit(
+                client_id=LoginInfo.client_id,
+                client_secret=LoginInfo.client_secret,
+                username=LoginInfo.username,
+                password=LoginInfo.password,
+                user_agent=LoginInfo.user_agent,
+            )
+            self.log.info("Connected to account: {}".format(self.reddit.user.me()))
+            self.canRun = True
+        except Exception:
+            self.log.exception("Failed to log in.")
+            self.canRun = False
+
+    def load_file(self, filename):
+        try:
+            with open(filename, "r") as infile:
+                return json.load(infile)
+        except Exception as err:
+            self.log.exception(f"Error loading file '{filename}'. Err: {err}")
+
+    def save_file(self, filename, data):
+        try:
+            with open(filename, "w") as outfile:
                 json.dump(data, outfile, indent=2)
-        print("First Time!")
-        print("Data added successfully")
-        n = 0
-    else:
-        for y in range(len(info)):
-            for contributor3 in subreddit.contributor():
-                if contributor3 == info[y].get("Name"):
-                    print("Users already in list!")
-                    flag = 0
-                    check = 1
-                    break
+            self.log.info("User appended successfully!")
+        except Exception as err:
+            self.log.exception(f"Error saving file '{filename}'. Err: {err}")
+
+    def unflaired(self):
+        self.log.info("Looking for new and unflaired users...")
+        info = self.load_file("LastApprovedUser.txt")
+
+        n = len(info) + 1
+        m = info[n - 2].get("Number")
+        mnew1 = m + 1
+
+        self.log.info(f"Current number of existing users: {m}")
+        flag = 0
+
+        checknew = 0
+        for contributor1 in self.subreddit.contributor():
+            for flair in self.subreddit.flair(redditor=contributor1):
+                if flair.get("flair_text") is None:
+                    self.log.info(f"Unflaired user found - {contributor1}")
+                    self.itemname.append(contributor1)
+                    checknew = 1
                 else:
                     flag = 1
+                    break
             if flag == 1:
-                itemname.append(str(contributor3))
-            if check == 1:
                 break
-        if flag == 1:
-            itemname.reverse()
-            for x in range(len(itemname)):
-                mnew3 = m + 1
-                itemfinal = { "Name" : itemname[x], "Number" : mnew3}
-                data.append(itemfinal)
-                print("User Appended!")
-                with open('LastApprovedUser.txt', 'w') as outfile:
-                    json.dump(data, outfile, indent=2)
-                print("Data added successfully")
-        else:
-            print("No data to add!")'''
-   
-while True:
-    unflaired()
-    print("Sleeping for 30 seconds!")
-    time.sleep(30)
+        self.itemname.reverse()
+        if checknew == 1:
+            for user in range(len(self.itemname)):
+                # Initiate the inflect engine
+                inflectengine = inflect.engine()
+                # Convert the number (1, 5, etc) to words (1st, 5th, etc)
+                current_num_text = inflectengine.ordinal(mnew1)
+                newflair = f"Mortal ({current_num_text})"
+                self.log.info(f"{self.itemname[user]} will be flaired: {newflair}")
+
+                self.subreddit.flair.set(self.itemname[user], newflair)
+                itemfinal = {"Name": str(self.itemname[user]), "Number": mnew1}
+                self.data.append(itemfinal)
+                mnew1 = mnew1 + 1
+            self.save_file("LastApprovedUser.txt", self.data)
+
+            self.log.info(f"New number of existing users: {mnew1 - 1}")
+
+        elif flag == 1:
+            self.log.info("No new users found!")
+
+    def main(self):
+        try:
+            self.unflaired()
+            time.sleep(60)
+
+        except prawcore.exceptions.RequestException as err:
+            self.log.warning(f"Reddit API error. Reddit may be unstable. Error: {err}")
+
+        except praw.exceptions.APIException as err:
+            self.log.exception(f"API Error! - Sleeping. Error: {err}")
+            time.sleep(120)
+
+        except praw.exceptions.ClientException as err:
+            self.log.exception(f"PRAW Client Error! - Sleeping. Error: {err}")
+            time.sleep(120)
+
+        except prawcore.exceptions.ServerError as err:
+            self.log.warning(f"PRAW Server Error! - Sleeping. Error: {err}")
+            time.sleep(120)
+
+        except prawcore.exceptions.NotFound as err:
+            self.log.exception(f"PRAW NotFound Error! - Sleeping. Error: {err}")
+            time.sleep(120)
+
+        except KeyboardInterrupt:
+            self.log.warning("Caught KeyboardInterrupt")
+            self.canRun = False
+
+        except Exception as err:
+            self.log.critical(
+                f"General Exception in main loop - sleeping 5 min. Error: {err}"
+            )
+            time.sleep(300)
 
 
+if __name__ == "__main__":
+    bot = Bot()
 
+    while bot.canRun:
+        bot.main()
