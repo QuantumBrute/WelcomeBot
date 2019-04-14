@@ -13,10 +13,10 @@ print ("Logging in...")
 
 #To login into reddit
 reddit = praw.Reddit(client_id= LoginInfo.client_id,
-					 client_secret= LoginInfo.client_secret,
-					 username= LoginInfo.username,
-					 password= LoginInfo.password,
-					 user_agent= LoginInfo.user_agent)
+		     client_secret= LoginInfo.client_secret,
+		     username= LoginInfo.username,
+		     password= LoginInfo.password,
+		     user_agent= LoginInfo.user_agent)
 
 print ("Logged in!")
 
