@@ -5,7 +5,7 @@ import time
 #Created by u/QuantumBrute
     
 data = []
-itemname = []
+#itemname = []
 
 print ("Starting Bot...")
 print ("Logging in...")
