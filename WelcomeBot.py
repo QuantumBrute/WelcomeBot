@@ -19,15 +19,13 @@ reddit = praw.Reddit(client_id= LoginInfo.client_id,
 
 print ("Logged in!")
 
-print("Opening LastApprovedUser...")
-with open('LastApprovedUser.txt', 'r') as infile:
-    info = json.load(infile,)
-
 subreddit = reddit.subreddit("TheApexCollective") # Defines which subreddit the bot should work on
 
 print("Looking for new and unflaired users...")
 
 def unflaired():
+    with open('LastApprovedUser.txt', 'r') as infile:
+        info = json.load(infile,)
     n = len(info) + 1
     m = info[n-2].get("Number")
     mnew1 = m + 1
@@ -107,7 +105,8 @@ def unflaired():
    
 while True:
     unflaired()
-    print("Sleeping for 30 minutues!")
+    print("Sleeping for 30 seconds!")
     time.sleep(30)
+
 
 
