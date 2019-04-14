@@ -5,7 +5,7 @@ import time
 #Created by u/QuantumBrute
     
 data = []
-#itemname = []
+itemname = []
 
 print ("Starting Bot...")
 print ("Logging in...")
@@ -34,29 +34,35 @@ def unflaired():
     #mnew2 = 0
     #mnew3 = 0
     print("Current number of existing users: " + str(m))
-    #flag = 0
+    flag = 0
     #check = 0
     checknew = 0
     for contributor1 in subreddit.contributor():
-        for flair in subreddit.flair(redditor=contributor1, limit=1):
+        for flair in subreddit.flair(redditor=contributor1):
             if flair.get("flair_text") == None:
                 print("Unflaired user found!")
-                print(str(contributor1) + " will be flaired: Mortal ("  + str(mnew1) + "th)")
-                newflair = ("Mortal (" + str(mnew1) + "th)")
-                subreddit.flair.set(contributor1,newflair)
-                itemfinal = { "Name" : str(contributor1), "Number" : mnew1}
-                data.append(itemfinal)
-                with open('LastApprovedUser.txt', 'w') as outfile:
-                    json.dump(data, outfile, indent=2)
+                itemname.append(contributor1)
                 checknew = 1
-                print("User appended successfully!")
-                print("New number of existing users: " + str(mnew1))
-                mnew1 = mnew1 + 1
             else:
-                checknew = 0
+                flag = 1
                 break
-        
-    if checknew == 0:
+        if flag == 1:
+            break
+    itemname.reverse()
+    if checknew == 1:
+        for a in range(len(itemname)):
+            print(str(itemname[a]) + " will be flaired: Mortal ("  + str(mnew1) + "th)")
+            newflair = ("Mortal (" + str(mnew1) + "th)")
+            subreddit.flair.set(str(itemname[a],newflair))
+            itemfinal = { "Name" : str(itemname[a]), "Number" : mnew1}
+            data.append(itemfinal)
+            mnew1 = mnew1 + 1
+        with open('LastApprovedUser.txt', 'w') as outfile:
+            json.dump(data, outfile, indent=2)
+        print("User appended successfully!")
+        print("New number of existing users: " + str(mnew1 - 1))
+             
+    elif flag == 1:
         print("No new users found!")
 
     '''if n==1:
@@ -102,5 +108,6 @@ def unflaired():
 while True:
     unflaired()
     print("Sleeping for 30 minutues!")
-    time.sleep(60*30)
+    time.sleep(30)
+
 
