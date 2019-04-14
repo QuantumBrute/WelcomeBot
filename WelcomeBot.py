@@ -2,9 +2,8 @@ import praw
 import LoginInfo
 import json
 import time
-from psaw import PushshiftAPI
 #Created by u/QuantumBrute
-api = PushshiftAPI()     
+    
 data = []
 itemname = []
 
