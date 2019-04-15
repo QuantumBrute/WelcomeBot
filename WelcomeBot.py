@@ -112,8 +112,9 @@ class Bot(object):
                 current_num_text = inflectengine.ordinal(mnew1)
                 newflair = f"Mortal ({current_num_text})"
                 self.log.info(f"{itemname[user]} will be flaired: {newflair}")
-
-                self.subreddit.flair.set(itemname[user], newflair)
+                
+                template = 'd53dd6f4-5fa4-11e9-8936-0ef1a91d77d4'
+                self.subreddit.flair.set(itemname[user],text = newflair,flair_template_id = template)
                 itemfinal = {"Name": str(itemname[user]), "Number": mnew1}
                 data.append(itemfinal)
                 mnew1 = mnew1 + 1
