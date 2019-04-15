@@ -27,8 +27,6 @@ class Bot(object):
     def __init__(self):
         self.reddit = None
         self.canRun = False
-        self.data = []
-        self.itemname = []
 
         # Create the logger
         loggerconfig = LoggerConfig(__dsn__, __botname__, __version__)
@@ -81,6 +79,8 @@ class Bot(object):
             self.log.exception(f"Error saving file '{filename}'. Err: {err}")
 
     def unflaired(self):
+        data = []
+        itemname = []
         self.log.info("Looking for new and unflaired users...")
         info = self.load_file("LastApprovedUser.txt")
 
@@ -96,28 +96,28 @@ class Bot(object):
             for flair in self.subreddit.flair(redditor=contributor1):
                 if flair.get("flair_text") is None:
                     self.log.info(f"Unflaired user found - {contributor1}")
-                    self.itemname.append(contributor1)
+                    itemname.append(contributor1)
                     checknew = 1
                 else:
                     flag = 1
                     break
             if flag == 1:
                 break
-        self.itemname.reverse()
+        itemname.reverse()
         if checknew == 1:
-            for user in range(len(self.itemname)):
+            for user in range(len(itemname)):
                 # Initiate the inflect engine
                 inflectengine = inflect.engine()
                 # Convert the number (1, 5, etc) to words (1st, 5th, etc)
                 current_num_text = inflectengine.ordinal(mnew1)
                 newflair = f"Mortal ({current_num_text})"
-                self.log.info(f"{self.itemname[user]} will be flaired: {newflair}")
+                self.log.info(f"{itemname[user]} will be flaired: {newflair}")
 
-                self.subreddit.flair.set(self.itemname[user], newflair)
-                itemfinal = {"Name": str(self.itemname[user]), "Number": mnew1}
-                self.data.append(itemfinal)
+                self.subreddit.flair.set(itemname[user], newflair)
+                itemfinal = {"Name": str(itemname[user]), "Number": mnew1}
+                data.append(itemfinal)
                 mnew1 = mnew1 + 1
-            self.save_file("LastApprovedUser.txt", self.data)
+            self.save_file("LastApprovedUser.txt", data)
 
             self.log.info(f"New number of existing users: {mnew1 - 1}")
 
